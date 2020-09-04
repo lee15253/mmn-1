@@ -22,6 +22,7 @@ from functions import TernaryTanh
 from torch.autograd import Variable
 from env_wrapper import atari_wrapper
 from moore_machine import MooreMachine
+import ipdb
 
 class ObsQBNet(nn.Module):
     """
@@ -371,6 +372,37 @@ if __name__ == '__main__':
                 fsm_object.generate_fsm(bgru_net, bgru_net_path, args.cuda, unmin_moore_machine_path, bgru_dir, min_moore_machine_path)
             if args.evaluate_fsm:
                 fsm_object.evaluate_fsm(bgru_net, bgru_net_path, min_moore_machine_path)
+
+        # BK
+        if args.functional_pruning:
+            gru_net = GRUNet(len(obs), args.gru_size, int(env.action_space.n))
+            bhx_net = HxQBNet(args.gru_size, args.bhx_size)
+            ox_net = ObsQBNet(gru_net.input_c_features, args.ox_size)
+            bgru_net = MMNet(gru_net, bhx_net, ox_net)
+            # if args.cuda: # TODO: 뉴럴넷 학습이 없기 때문에 cpu로 간다.
+            #     bgru_net = bgru_net.cuda()
+
+            bx_prefix = 'scratch-'
+            if not args.bx_scratch:
+                if bgru_net.bhx_net is not None:
+                    bgru_net.bhx_net.load_state_dict(torch.load(bhx_net_path))
+                if bgru_net.obx_net is not None:
+                    bgru_net.obx_net.load_state_dict(torch.load(ox_net_path))
+                bx_prefix = ''
+
+            gru_prefix = 'scratch-'
+            if not args.gru_scratch:
+                bgru_net.gru_net.load_state_dict(torch.load(gru_net_path))
+                bgru_net.gru_net.noise = False
+                gru_prefix = ''
+
+            # create directories to save result
+            bgru_dir_name = '{}gru_{}_{}hx_({},{})_bgru'.format(gru_prefix, args.gru_size, bx_prefix, args.bhx_size, args.ox_size)
+            bgru_dir = tl.ensure_directory_exits(os.path.join(env_dir, bgru_dir_name))
+            _log_tag = 'functional_pruning'
+            tl.set_log(bgru_dir, _log_tag)
+            fsm_object.functional_pruning_fsm(bgru_net, bgru_dir, args.cuda)
+
         env.close()
     except Exception as ex:
         logging.error(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))

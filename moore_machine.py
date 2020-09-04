@@ -4,12 +4,16 @@ import random
 import scipy.misc
 import numpy as np
 import logging, sys
-from collections import deque
+from collections import deque, defaultdict
 import torch.nn.functional as F
 from prettytable import PrettyTable
 from torch.autograd import Variable
 from tools import ensure_directory_exits
 from PIL import Image, ImageFont, ImageDraw
+import time
+import copy
+import ipdb
+
 
 logger = logging.getLogger(__name__)
 
@@ -499,7 +503,8 @@ class MooreMachine:
         self.minobs_obs_map = _minobs_obs_map
         self.minimized = True
 
-    def evaluate(self, net, env, total_episodes, log=True, render=False, inspect=False, store_obs=False, path=None, cuda=False):
+    def evaluate(self, net, env, total_episodes, log=True, render=False,
+                    inspect=False, store_obs=False, path=None, cuda=False, count=False, new_transaction=None):
         """
         Evaluate the trained network.
 
@@ -512,9 +517,11 @@ class MooreMachine:
         :param store_obs: check to store observations again
         :param path: where to check for inspection
         :param cuda: check if cuda is available
+        :param count: get # of each (state,branch) for functional pruning
         :return: evaluation performance on given model
         """
         net.eval()
+
         if inspect:
             obs_path = ensure_directory_exits(os.path.join(path, 'obs'))
             video_dir_path = ensure_directory_exits(os.path.join(path, 'eps_videos'))
@@ -524,8 +531,18 @@ class MooreMachine:
                               sorted(self.state_desc.keys())}
             self.trajectory = []
 
+        # BK
+        if count == True:
+            branch_freq = defaultdict(lambda: defaultdict(lambda: 0))
+        if new_transaction == None:
+            new_transaction = self.transaction
+
         total_reward = 0
         for ep in range(total_episodes):
+            random.seed(int(time.time()))
+            np.random.seed(int(time.time()))
+            torch.manual_seed(int(time.time()))
+
             if inspect:
                 ep_video_path = ensure_directory_exits(os.path.join(video_dir_path, str(ep)))
                 obs, org_obs = env.reset(inspect=True)
@@ -537,6 +554,7 @@ class MooreMachine:
             ep_actions = []
             ep_obs = []
             curr_state = self.start_state
+            curr_time = 0
             while not done:
                 ep_obs.append(obs)
                 obs = torch.FloatTensor(obs).unsqueeze(0)
@@ -548,7 +566,7 @@ class MooreMachine:
                 if store_obs:
                     obs_dir = ensure_directory_exits(os.path.join(obs_path, str(obs_index)))
                     scipy.misc.imsave(
-                        os.path.join(obs_dir, str(obs_index) + '_' + str(random.randint(0, 100000)) + '.jpg'),
+                        os.path.join(obs_dir, 'o_' + str(obs_index) + '_h_' + str(curr_state) + '_t_' + str(curr_time) + '.jpg'),
                         org_obs)
 
                 if not self.minimized:
@@ -558,8 +576,15 @@ class MooreMachine:
                         (obs_index, pre_index) = (self.obs_minobs_map[obs_index], obs_index)
                     except Exception as e:
                         logger.error(e)
+                        ipdb.set_trace()
 
-                next_state = self.transaction[curr_state][obs_index]
+                if curr_state ==1 and obs_index =='o_2' and count==False:
+                    ipdb.set_trace()
+                next_state = new_transaction[curr_state][obs_index]
+
+                if count == True:
+                    branch_freq[curr_state][obs_index] += 1
+
                 if next_state is None:
                     logger.info('None state encountered!')
                     logger.info('Exiting the script!')
@@ -595,6 +620,9 @@ class MooreMachine:
                     if actions_to_consider.count(actions_to_consider[0]) == max_same_action:
                         done = True
 
+                curr_time += 1
+
+            print('최종 time:', curr_time)
             total_reward += ep_reward
             if log:
                 logger.info("Episode => {} Score=> {}".format(ep, ep_reward))
@@ -640,11 +668,65 @@ class MooreMachine:
                 obs_path = obs_path.replace('(', '\(').replace(')', '\)')
                 os.system("rm -rf {}".format(obs_path))
 
+        if count == True:
+            return total_reward / total_episodes, branch_freq
+
         return total_reward / total_episodes
+
+    def functional_pruning(self, bgru_net, env, log=True, cuda=False, store_obs=False, inspect=False, path=None):
+        decision_points = []
+        pruned_branches = {}
+
+        # get the # of each branch
+        original_avg_rewards, branch_freq= self.evaluate(bgru_net, env, cuda= False, total_episodes=1,
+                                    render=False, store_obs=False, inspect=False, count=True, path=path)
+
+        # get Decision points
+        for i in branch_freq:
+            if len(branch_freq[i]) != 1:
+                decision_points.append(i)
+        decision_points.sort()
+
+
+        # functional_pruning
+        new_transaction = copy.deepcopy(self.transaction)
+        pruned_transaction = copy.deepcopy(self.transaction)
+
+        for i in decision_points:
+            branches = sorted(branch_freq[i].items(), key=lambda x: x[1], reverse=True)
+            while(len(branches)>1):
+                leastFreqBranch = branches[0][0]
+                mostFreqBranch = branches[-1][0]
+
+                # 어차피 같은 곳으로 transit할 경우 -> prune (interpretable reduction (Parallel Reduction))
+                if new_transaction[i][leastFreqBranch] == new_transaction[i][mostFreqBranch]:
+                    pruned_transaction[i][leastFreqBranch] = 'pruned'
+                else:
+                    backup = new_transaction[i][leastFreqBranch]
+                    new_transaction[i][leastFreqBranch] = new_transaction[i][mostFreqBranch]
+                    avg_rewards = self.evaluate(bgru_net, env, cuda= False, total_episodes=2,
+                                        render=False, store_obs=False, inspect=False, path=path, new_transaction=new_transaction)
+                    # decaying in performance
+                    if avg_rewards < original_avg_rewards:
+                        new_transaction[i][leastFreqBranch] = backup
+                        print('state:{}, branch:{}. Decaying in formance -> go back'.format(i, leastFreqBranch))
+                    # no decaying in performance
+                    else:
+                        print('state:{}, branch:{}. No decaying in formance -> prune'.format(i, leastFreqBranch))
+                        pruned_transaction[i][leastFreqBranch] = 'pruned'
+
+                branches.pop(0)
+
+
+
+        ipdb.set_trace()
+
+
 
     @staticmethod
     def text_image(shape, text, position=(0, 0), font_size=25):
-        font = ImageFont.truetype("arial.ttf", font_size)
+        # font = ImageFont.truetype("arial.ttf", font_size)
+        font = ImageFont.load_default()
         img = Image.new("RGB", shape, (255, 255, 255))
         draw = ImageDraw.Draw(img)
         draw.text(position, text, (0, 0, 0), font=font)
