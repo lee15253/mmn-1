@@ -271,6 +271,7 @@ def get_args():
     parser.add_argument('--bx_scratch', action='store_true', default=False, help='use scratch bx network for BGRU')
     parser.add_argument('--generate_fsm', action='store_true', default=False, help='extract fsm from fmm net')
     parser.add_argument('--evaluate_fsm', action='store_true', default=False, help='evaluate fsm')
+    parser.add_argument('--functional_pruning', action='store_true', default=False, help='functional pruning')
 
     parser.add_argument('--bn_episodes', type=int, default=20,
                         help="No. of episodes for generating data for Bottleneck Network")
