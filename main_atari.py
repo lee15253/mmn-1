@@ -54,7 +54,6 @@ class ObsQBNet(nn.Module):
     def decode(self, x):
         return self.decoder(x)
 
-
 class HxQBNet(nn.Module):
     """
     Quantized Bottleneck Network(QBN) for hidden states of GRU
@@ -379,9 +378,9 @@ if __name__ == '__main__':
             bhx_net = HxQBNet(args.gru_size, args.bhx_size)
             ox_net = ObsQBNet(gru_net.input_c_features, args.ox_size)
             bgru_net = MMNet(gru_net, bhx_net, ox_net)
-            # if args.cuda: # TODO: 뉴럴넷 학습이 없기 때문에 cpu로 간다.
+            # if args.cuda: # TODO: 뉴럴넷 학습이 없기 때문에 cpu로 간다.  
             #     bgru_net = bgru_net.cuda()
-
+            
             bx_prefix = 'scratch-'
             if not args.bx_scratch:
                 if bgru_net.bhx_net is not None:
@@ -395,7 +394,7 @@ if __name__ == '__main__':
                 bgru_net.gru_net.load_state_dict(torch.load(gru_net_path))
                 bgru_net.gru_net.noise = False
                 gru_prefix = ''
-
+            
             # create directories to save result
             bgru_dir_name = '{}gru_{}_{}hx_({},{})_bgru'.format(gru_prefix, args.gru_size, bx_prefix, args.bhx_size, args.ox_size)
             bgru_dir = tl.ensure_directory_exits(os.path.join(env_dir, bgru_dir_name))

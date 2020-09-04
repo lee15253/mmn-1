@@ -131,7 +131,7 @@ class ProcessFSM():
 
     def functional_pruning_fsm(self, bgru_net, bgru_dir, cuda):
         bgru_net_path = os.path.join(bgru_dir, 'model.p')
-        bgru_plot_dir = tl.ensure_directory_exits(os.path.join(bgru_dir, 'Plots'))
+        bgru_plot_dir = tl.ensure_directory_exits(os.path.join(bgru_dir, 'Plots'))  
         # TODO: unminimized / minimized 상관 없이 agnostic한 pruning을 짜야 한다
         # 계획은 minimized 넣는 건데, 만약 그 그림이 understanding 논문과 다르다면
         # unminimized에 하고 interpretable reduction까지 해봐야하니까
@@ -145,5 +145,5 @@ class ProcessFSM():
         # TODO: Store_obs는 일단 False로 한다
         path = bgru_net_path
         abcd = moore_machine.functional_pruning(bgru_net, self.env, log=True, store_obs = False, path = bgru_dir)
-
+        
 

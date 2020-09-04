@@ -503,7 +503,7 @@ class MooreMachine:
         self.minobs_obs_map = _minobs_obs_map
         self.minimized = True
 
-    def evaluate(self, net, env, total_episodes, log=True, render=False,
+    def evaluate(self, net, env, total_episodes, log=True, render=False, 
                     inspect=False, store_obs=False, path=None, cuda=False, count=False, new_transaction=None):
         """
         Evaluate the trained network.
@@ -521,7 +521,7 @@ class MooreMachine:
         :return: evaluation performance on given model
         """
         net.eval()
-
+        
         if inspect:
             obs_path = ensure_directory_exits(os.path.join(path, 'obs'))
             video_dir_path = ensure_directory_exits(os.path.join(path, 'eps_videos'))
@@ -581,7 +581,7 @@ class MooreMachine:
                 if curr_state ==1 and obs_index =='o_2' and count==False:
                     ipdb.set_trace()
                 next_state = new_transaction[curr_state][obs_index]
-
+                
                 if count == True:
                     branch_freq[curr_state][obs_index] += 1
 
@@ -619,7 +619,7 @@ class MooreMachine:
                     actions_to_consider = ep_actions[-max_same_action:]
                     if actions_to_consider.count(actions_to_consider[0]) == max_same_action:
                         done = True
-
+                
                 curr_time += 1
 
             print('최종 time:', curr_time)
@@ -678,9 +678,9 @@ class MooreMachine:
         pruned_branches = {}
 
         # get the # of each branch
-        original_avg_rewards, branch_freq= self.evaluate(bgru_net, env, cuda= False, total_episodes=1,
-                                    render=False, store_obs=False, inspect=False, count=True, path=path)
-
+        original_avg_rewards, branch_freq= self.evaluate(bgru_net, env, cuda= False, total_episodes=1, 
+                                    render=False, store_obs=False, inspect=False, count=True, path=path)                
+        
         # get Decision points
         for i in branch_freq:
             if len(branch_freq[i]) != 1:
@@ -697,31 +697,31 @@ class MooreMachine:
             while(len(branches)>1):
                 leastFreqBranch = branches[0][0]
                 mostFreqBranch = branches[-1][0]
-
+                
                 # 어차피 같은 곳으로 transit할 경우 -> prune (interpretable reduction (Parallel Reduction))
                 if new_transaction[i][leastFreqBranch] == new_transaction[i][mostFreqBranch]:
-                    pruned_transaction[i][leastFreqBranch] = 'pruned'
+                    pruned_transaction[i][leastFreqBranch] = 'pruned' 
                 else:
                     backup = new_transaction[i][leastFreqBranch]
                     new_transaction[i][leastFreqBranch] = new_transaction[i][mostFreqBranch]
-                    avg_rewards = self.evaluate(bgru_net, env, cuda= False, total_episodes=2,
+                    avg_rewards = self.evaluate(bgru_net, env, cuda= False, total_episodes=2, 
                                         render=False, store_obs=False, inspect=False, path=path, new_transaction=new_transaction)
                     # decaying in performance
-                    if avg_rewards < original_avg_rewards:
+                    if avg_rewards < original_avg_rewards:  
                         new_transaction[i][leastFreqBranch] = backup
                         print('state:{}, branch:{}. Decaying in formance -> go back'.format(i, leastFreqBranch))
                     # no decaying in performance
-                    else:
+                    else:  
                         print('state:{}, branch:{}. No decaying in formance -> prune'.format(i, leastFreqBranch))
                         pruned_transaction[i][leastFreqBranch] = 'pruned'
 
                 branches.pop(0)
-
-
+                
+                
 
         ipdb.set_trace()
 
-
+        
 
     @staticmethod
     def text_image(shape, text, position=(0, 0), font_size=25):
