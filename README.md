@@ -131,7 +131,7 @@ Formation of MMN requires following multiple steps which could be found [here](#
     ```bash
     results/Atari/PongDeterministic-v4/gru_32_ox_100/
     ```
-6. Test BHX (optional): Inserts the saved OX model into original rnn model and evaluates the model with environment. 
+6. Test OX (optional): Inserts the saved OX model into original rnn model and evaluates the model with environment. 
     ```bash
     python main_atari.py --env PongDeterministic-v4 --ox_test --ox_size 100 --bhx_size 64 --gru_size 32 --generate_max_steps 100
     ```

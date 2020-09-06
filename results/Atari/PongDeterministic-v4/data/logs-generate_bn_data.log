@@ -1,0 +1,46 @@
+09/04/2020 03:25:25 PM [INFO ] [root -> <module>]  Generating Data-Set for Later Bottle Neck Training
+09/04/2020 03:25:26 PM [INFO ] [root -> generate_bottleneck_data]  No Data Found @ path : /home/hojoon/Desktop/github/ml-projects/FSM/mmn-master/results/Atari/PongDeterministic-v4/data/bottleneck_data.p
+09/04/2020 03:25:26 PM [INFO ] [root -> generate_bottleneck_data]  Generating BottleNeck Data..
+09/04/2020 03:25:27 PM [INFO ] [root -> generate_bottleneck_data]  episode:0 reward:0.0
+09/04/2020 03:25:27 PM [INFO ] [root -> generate_bottleneck_data]  episode:1 reward:0.0
+09/04/2020 03:25:28 PM [INFO ] [root -> generate_bottleneck_data]  episode:2 reward:0.0
+09/04/2020 03:25:28 PM [INFO ] [root -> generate_bottleneck_data]  episode:3 reward:-1.0
+09/04/2020 03:25:28 PM [INFO ] [root -> generate_bottleneck_data]  episode:4 reward:0.0
+09/04/2020 03:25:29 PM [INFO ] [root -> generate_bottleneck_data]  episode:5 reward:0.0
+09/04/2020 03:25:29 PM [INFO ] [root -> generate_bottleneck_data]  episode:6 reward:0.0
+09/04/2020 03:25:29 PM [INFO ] [root -> generate_bottleneck_data]  episode:7 reward:0.0
+09/04/2020 03:25:29 PM [INFO ] [root -> generate_bottleneck_data]  episode:8 reward:0.0
+09/04/2020 03:25:30 PM [INFO ] [root -> generate_bottleneck_data]  episode:9 reward:0.0
+09/04/2020 03:25:30 PM [INFO ] [root -> generate_bottleneck_data]  episode:10 reward:0.0
+09/04/2020 03:25:30 PM [INFO ] [root -> generate_bottleneck_data]  episode:11 reward:-1.0
+09/04/2020 03:25:30 PM [INFO ] [root -> generate_bottleneck_data]  episode:12 reward:0.0
+09/04/2020 03:25:30 PM [INFO ] [root -> generate_bottleneck_data]  episode:13 reward:-1.0
+09/04/2020 03:25:31 PM [INFO ] [root -> generate_bottleneck_data]  episode:14 reward:0.0
+09/04/2020 03:25:31 PM [INFO ] [root -> generate_bottleneck_data]  episode:15 reward:-1.0
+09/04/2020 03:25:31 PM [INFO ] [root -> generate_bottleneck_data]  episode:16 reward:0.0
+09/04/2020 03:25:31 PM [INFO ] [root -> generate_bottleneck_data]  episode:17 reward:0.0
+09/04/2020 03:25:32 PM [INFO ] [root -> generate_bottleneck_data]  episode:18 reward:0.0
+09/04/2020 03:25:32 PM [INFO ] [root -> generate_bottleneck_data]  episode:19 reward:-1.0
+09/04/2020 03:25:32 PM [INFO ] [root -> generate_bottleneck_data]  Average Performance:-0.25
+09/04/2020 03:25:32 PM [INFO ] [root -> generate_bottleneck_data]  Action: 1 Hx Data: 308 Obs Data: 182
+09/04/2020 03:25:32 PM [INFO ] [root -> generate_bottleneck_data]  Action: 2 Hx Data: 431 Obs Data: 240
+09/04/2020 03:25:32 PM [INFO ] [root -> generate_bottleneck_data]  Action: 0 Hx Data: 239 Obs Data: 141
+09/04/2020 03:25:32 PM [INFO ] [root -> generate_bottleneck_data]  Data Sizes:
+09/04/2020 03:25:32 PM [INFO ] [root -> generate_bottleneck_data]  Hx Train:2020 Hx Test:969 Obs Train:2020 Obs Test:499
+09/04/2020 03:25:32 PM [INFO ] [root -> generate_trajectories]  Generating data .. 
+09/04/2020 03:25:36 PM [INFO ] [root -> generate_trajectories]  Ep:0 Batch: 0 Reward:21.0
+09/04/2020 03:25:40 PM [INFO ] [root -> generate_trajectories]  Ep:0 Batch: 1 Reward:21.0
+09/04/2020 03:25:44 PM [INFO ] [root -> generate_trajectories]  Ep:0 Batch: 2 Reward:21.0
+09/04/2020 03:25:48 PM [INFO ] [root -> generate_trajectories]  Ep:0 Batch: 3 Reward:21.0
+09/04/2020 03:25:52 PM [INFO ] [root -> generate_trajectories]  Ep:0 Batch: 4 Reward:21.0
+09/04/2020 03:25:56 PM [INFO ] [root -> generate_trajectories]  Ep:1 Batch: 0 Reward:21.0
+09/04/2020 03:26:00 PM [INFO ] [root -> generate_trajectories]  Ep:1 Batch: 1 Reward:21.0
+09/04/2020 03:26:04 PM [INFO ] [root -> generate_trajectories]  Ep:1 Batch: 2 Reward:21.0
+09/04/2020 03:26:08 PM [INFO ] [root -> generate_trajectories]  Ep:1 Batch: 3 Reward:21.0
+09/04/2020 03:26:12 PM [INFO ] [root -> generate_trajectories]  Ep:1 Batch: 4 Reward:21.0
+09/04/2020 03:26:16 PM [INFO ] [root -> generate_trajectories]  Ep:2 Batch: 0 Reward:21.0
+09/04/2020 03:26:20 PM [INFO ] [root -> generate_trajectories]  Ep:2 Batch: 1 Reward:21.0
+09/04/2020 03:26:25 PM [INFO ] [root -> generate_trajectories]  Ep:2 Batch: 2 Reward:21.0
+09/04/2020 03:26:29 PM [INFO ] [root -> generate_trajectories]  Ep:2 Batch: 3 Reward:21.0
+09/04/2020 03:26:33 PM [INFO ] [root -> generate_trajectories]  Ep:2 Batch: 4 Reward:21.0
+09/04/2020 03:26:33 PM [INFO ] [root -> generate_trajectories]  Average Performance: 21.0

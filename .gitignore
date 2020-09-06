@@ -1,6 +1,17 @@
 # Directories #
-results/Atari/PongDeterministic-v4/*/*/
+results/
+third-parties/
+third-parties/*
+.idea/
 
 # files
 *.pyc
 *.log
+**/.*.swp
+*.ipynb
+**/*.pyc
+*.pyc
+.ipynb_checkpoints
+sftp-config.json
+.idea/
+logs
