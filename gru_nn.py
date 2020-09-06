@@ -10,6 +10,7 @@ from tools import plot_data
 import logging, copy, random
 import torch.nn.functional as F
 from torch.autograd import Variable
+import ipdb
 
 logger = logging.getLogger(__name__)
 
@@ -158,7 +159,9 @@ def test(net, env, total_episodes, test_seeds=None, cuda=False, log=False, rende
     """
     net.eval()
     total_reward = 0
+    
     with torch.no_grad():
+        # temp_trajectory = [] TODO: for debugging (고정 trajectory인지) -> 맞다
         for ep in range(total_episodes):
             obs = env.reset()
             done = False
@@ -176,7 +179,8 @@ def test(net, env, total_episodes, test_seeds=None, cuda=False, log=False, rende
                 critic, logit, hx = net((obs, hx))
                 prob = F.softmax(logit, dim=1)
                 action = int(prob.max(1)[1].data.cpu().numpy())
-                obs, reward, done, _ = env.step(action)
+                # temp_trajectory.append((obs[0,0,15,35:45].tolist(),action))  # TODO: for debugging
+                obs, reward, done, _ = env.step(action)                
                 action_count += 1
                 done = done if action_count <= max_actions else True
                 ep_actions.append(action)

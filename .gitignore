@@ -1,0 +1,6 @@
+# Directories #
+results/Atari/PongDeterministic-v4/*/*/
+
+# files
+*.pyc
+*.log

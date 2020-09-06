@@ -13,6 +13,13 @@ from PIL import Image, ImageFont, ImageDraw
 import time
 import copy
 import ipdb
+# from torch.utils.tensorboard import SummaryWriter
+# import sklearn.metrics.pairwise as pw
+# writer1 = SummaryWriter('results/Atari/PongDeterministic-v4/gru_32_hx_(64,100)_bgru/debug/original_obs')
+# writer2 = SummaryWriter('results/Atari/PongDeterministic-v4/gru_32_hx_(64,100)_bgru/debug/orignal_hx')
+# writer3 = SummaryWriter('results/Atari/PongDeterministic-v4/gru_32_hx_(64,100)_bgru/debug/quantized_obs')
+# writer4 = SummaryWriter('results/Atari/PongDeterministic-v4/gru_32_hx_(64,100)_bgru/debug/quantized_hx')
+# writer5 = SummaryWriter('results/Atari/PongDeterministic-v4/gru_32_hx_(64,100)_bgru/debug/real_quantized_hx')
 
 
 logger = logging.getLogger(__name__)
@@ -93,6 +100,7 @@ class MooreMachine:
             if self.state_desc[state_index]['action'] == str(None) and _action is not None:
                 self.state_desc[state_index]['action'] = str(_action)
             state_indices.append(state_index)
+        # 이렇게 모든 self.obs_space를 돌아가면서 다 추가했던 이유가, full_transaction_table 때문임.
         for s_i in state_indices:
             if s_i not in self.transaction:
                 self.transaction[s_i] = {_: None for _ in range(len(self.obs_space))}
@@ -127,6 +135,14 @@ class MooreMachine:
 
             # collect all unique transactions
             all_ep_rewards = []
+            # For debugging
+            # all_obs = []  
+            # all_obs_2 = []
+            # all_hidden = []
+            # all_hidden_2 = []
+            # all_hidden_3 = []
+            # original_obs = []
+            # actions = []
             for ep in range(episodes):
                 done = False
                 obs = env.reset()
@@ -145,10 +161,18 @@ class MooreMachine:
                     obs = Variable(torch.Tensor(obs)).unsqueeze(0)
                     if cuda:
                         obs = obs.cuda()
-                    critic, logit, next_state, (next_state_c, next_state_x), (_, obs_x) = net((obs, curr_state),
+                    critic, logit, next_state, (next_state_c, next_state_x), (obs_c, obs_x) = net((obs, curr_state),
                                                                                               inspect=True)
                     prob = F.softmax(logit, dim=1)
                     next_action = int(prob.max(1)[1].cpu().data.numpy())
+                    # For debugging
+                    # original_obs.append(obs.squeeze())
+                    # all_obs.append(obs_c.squeeze())  # For debugging
+                    # all_obs_2.append(net.obx_net.decoder[0](obs_x).squeeze())
+                    # all_hidden.append(next_state_c.squeeze())  
+                    # all_hidden_2.append(net.bhx_net.decoder[0](next_state_x).squeeze())
+                    # all_hidden_3.append(next_state_x.squeeze())
+                    # actions.append(next_action)
 
                     self._update_info(obs_x.cpu().data.numpy()[0], curr_state_x.cpu().data.numpy()[0],
                                       next_state_x.cpu().data.numpy()[0], curr_action, next_action)
@@ -173,8 +197,33 @@ class MooreMachine:
             if log:
                 logger.info('Average Reward:{}'.format(np.average(all_ep_rewards)))
 
+        # TODO: quantization을 들어가기 전, quantized 된것, decoder[0](quantized 된것) 셋다 embedding 거의 똑같고
+        # 즉 similarity 순위가 똑같고, 심지어 개수마저 같다. 오토인코더 왜씀??
+        # torch_original_obs = torch.stack(all_obs,0)
+        # writer1.add_embedding(torch_original_obs, metadata=actions)
+        # torch_original_hidden = torch.stack(all_hidden,0)
+        # writer2.add_embedding(torch_original_hidden, metadata=actions)
+        # torch_quantized_obs = torch.stack(all_obs_2,0)
+        # writer3.add_embedding(torch_quantized_obs, metadata=actions)
+        # torch_quantized_hidden = torch.stack(all_hidden_2,0)
+        # writer4.add_embedding(torch_quantized_hidden, metadata=actions)
+        # torch_quantized_hidden_real = torch.stack(all_hidden_3,0)
+        # writer5.add_embedding(torch_quantized_hidden_real, metadata=actions)
+        # writer1.close()
+        # writer2.close()
+        # writer3.close()
+        # writer4.close()
+        # writer5.close()
+
+        # TODO: similarity가 비슷한 것들을 순서대로 정리했을 때, action이 다른것들도 껴있다
+        # ex) action이 2인 것들 근처에, 2222222211110221022210 이런식
+        # cos_sim = pw.cosine_similarity(np.expand_dims(torch_quantized_hidden[374].cpu().data.numpy(),0), 
+        #                                 torch_quantized_hidden.cpu().data.numpy()).squeeze()
+        # cos_sim = sorted([i for i in zip(cos_sim,actions)], reverse=True)
+        # action_sim = [i[1] for i in cos_sim]
+
         if not partial:
-            # find missing entries in the transaction table
+            # find missing entries in the transaction table            
             unknowns = []
             for curr_state_i in self.state_desc.keys():
                 if curr_state_i in self.transaction:
@@ -185,8 +234,12 @@ class MooreMachine:
                 else:
                     unknowns += [(curr_state_i, i) for i in range(len(self.obs_space))]
 
+            # Pong의 경우, 총 139125(371*375)개 중 138744개가 unknown이다.
             # fill information for the missing transactions
             done = False
+            # For debugging
+            # temp = 0 
+            # new_temp = 0
             while not done:
                 done = True
                 for i, (state_i, obs_i) in enumerate(unknowns):
@@ -200,10 +253,13 @@ class MooreMachine:
                     if cuda:
                         state_x, obs_x = state_x.cuda(), obs_x.cuda()
 
+                    # 1. h_x -> decode -> h' -> action을 구한다.
                     curr_action = net.get_action_linear(state_x, decode=True)
                     prob = F.softmax(curr_action, dim=1)
                     curr_action = int(prob.max(1)[1].cpu().data.numpy()[0])
 
+                    # 2. obs_x -> obs'  /   h_x_t -> h'
+                    # obs' , h' -> GRU -> new_h -> encode -> new_h_x
                     next_state_x = net.transact(obs_x, state_x)
                     next_action = net.get_action_linear(next_state_x, decode=True)
                     prob = F.softmax(next_action, dim=1)
@@ -212,13 +268,24 @@ class MooreMachine:
                     next_state_x = next_state_x.cpu().data.numpy()[0]
                     state_x = state_x.cpu().data.numpy()[0]
                     obs_x = obs_x.cpu().data.numpy()[0]
+                    # (obs_x, h_x, new_h_x, action(h_x), action(new_h_x))로 update한다.
                     state_indices, new_entries = self._update_info(obs_x, state_x, next_state_x, curr_action,
                                                                    next_action)
                     unknowns.pop(i)
 
+                    # For debugging
+                    # new_temp +=1
+                    # if state_indices[1] +1 != len(self.state_space):  # 즉 새로 추가된 놈이면
+                    #     temp+=1
+                    #     new_temp -=1
+                    #     print('새로운거 추가 안됨. 지금까지 추가 안되고 원래 있던 놈으로 mapping된 놈의 개수:{}, 추가된 놈 개수:{}'
+                    #             .format(temp, new_temp))
                     if len(new_entries) > 0:
                         unknowns += new_entries
-                        logger.info('New Unknown State-Trasactions: {}'.format(new_entries))
+                        print('state_indices',state_indices)
+                        logger.info('len(New Unknown State-Trasactions): {}, len(unknwons):{}, len(self.state_space):{}, len(self.obs_space):{}\n'.format(
+                                                len(new_entries), len(unknowns),len(self.state_space),len(self.obs_space)))
+
                     x.add(''.join([str(int(i)) for i in next_state_x]))
                     done = False
                     break
@@ -383,7 +450,7 @@ class MooreMachine:
             else:
                 _minobs_obs_map[_trans_minobs_map[_trans_key]].append(i)
             _obs_minobs_map[i] = _trans_minobs_map[_trans_key]
-
+    
         # Update information
         self.transaction = min_trans
         self.state_desc = new_state_info

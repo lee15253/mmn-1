@@ -264,6 +264,8 @@ def get_args():
     parser.add_argument('--bhx_suffix', default='', help="suffix fo bhx folder")
     parser.add_argument('--ox_size', type=int, help="binary encoding size")
 
+    parser.add_argument('--full_table', action='store_true', default=False, help='whether to use full transaction table')
+
     parser.add_argument('--train_epochs', type=int, default=400, help="No. of training episodes")
     parser.add_argument('--batch_size', type=int, default=32, help="batch size used for training")
     parser.add_argument('--bgru_lr', type=float, default=0.0001, help="Learning rate for binary GRU")

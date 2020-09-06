@@ -368,9 +368,9 @@ if __name__ == '__main__':
             if args.bgru_test:
                 fsm_object.bgru_test(bgru_net, bgru_net_path, args.cuda)
             if args.generate_fsm:
-                fsm_object.generate_fsm(bgru_net, bgru_net_path, args.cuda, unmin_moore_machine_path, bgru_dir, min_moore_machine_path)
+                fsm_object.generate_fsm(bgru_net, bgru_net_path, args.cuda, bgru_dir, args.full_table)
             if args.evaluate_fsm:
-                fsm_object.evaluate_fsm(bgru_net, bgru_net_path, min_moore_machine_path)
+                fsm_object.evaluate_fsm(bgru_net, bgru_net_path, min_moore_machine_path, args.full_table)
 
         # BK
         if args.functional_pruning:

@@ -14,6 +14,8 @@ import logging
 import tools as tl
 from torch import optim
 from moore_machine import MooreMachine
+import ipdb
+import sys
 
 
 class ProcessFSM():
@@ -109,21 +111,38 @@ class ProcessFSM():
         bgru_perf = bgru_nn.test(bgru_net, self.env, 1, log=True, cuda=cuda, render=True)
         logging.info('Average Performance: {}'.format(bgru_perf))
 
-    def generate_fsm(self, bgru_net, bgru_net_path, cuda, unmin_moore_machine_path, bgru_dir, min_moore_machine_path):
+    def generate_fsm(self, bgru_net, bgru_net_path, cuda, bgru_dir, full_table):
         bgru_net.load_state_dict(torch.load(bgru_net_path))
         bgru_net.eval()
         moore_machine = MooreMachine()
-        moore_machine.extract_from_nn(self.env, bgru_net, 10, 0, log=True, partial=True, cuda=cuda)
-        pickle.dump(moore_machine, open(unmin_moore_machine_path, 'wb'))
-        moore_machine.save(open(os.path.join(bgru_dir, 'fsm.txt'), 'w'))
+        # TODO: Full transaction table은 구할 수 없다. notion 참조.
+        # if full_table:
+        #     moore_machine.extract_from_nn(self.env, bgru_net, 2, 0, log=True, partial=False, cuda=cuda)
+        #     pickle.dump(moore_machine, open(os.path.join(bgru_dir, 'full_unmin_moore_machine.p'), 'wb'))
+        #     moore_machine.save(open(os.path.join(bgru_dir, 'full_fsm.txt'), 'w'))
+        #     # minimize_full_fsm
+        #     moore_machine.minimize()
+        #     moore_machine.save(open(os.path.join(bgru_dir, 'full_minimized_moore_machine.txt'), 'w'))
+        #     pickle.dump(moore_machine, open(os.path.join(bgru_dir, 'full_min_moore_machine.p'), 'wb'))
 
+        # else:  # original mmn
+        moore_machine.extract_from_nn(self.env, bgru_net, 1, 0, log=True, partial=True, cuda=cuda)
+        pickle.dump(moore_machine, open(os.path.join(bgru_dir, 'partial_unmin_moore_machine.p'), 'wb'))
+        moore_machine.save(open(os.path.join(bgru_dir, 'partial_fsm.txt'), 'w'))
+        # minimize_partial_fsm
         moore_machine.minimize_partial_fsm(bgru_net)
-        moore_machine.save(open(os.path.join(bgru_dir, 'minimized_moore_machine.txt'), 'w'))
-        pickle.dump(moore_machine, open(min_moore_machine_path, 'wb'))
-
-    def evaluate_fsm(self, bgru_net, bgru_net_path, min_moore_machine_path):
+        moore_machine.save(open(os.path.join(bgru_dir, 'partial_minimized_moore_machine.txt'), 'w'))
+        pickle.dump(moore_machine, open(os.path.join(bgru_dir, 'partial_min_moore_machine.p'), 'wb'))
+        
+    def evaluate_fsm(self, bgru_net, bgru_net_path, bgru_dir, full_table):
         bgru_net.load_state_dict(torch.load(bgru_net_path))
-        moore_machine = pickle.load(open(min_moore_machine_path, 'rb'))
+        # if not full_table:
+        #     # TODO: full transaction table을 구성할 수 없음을 알았다.
+        #     print('we cannot evaluate partial_minimzed_fsm !')
+        #     sys.exit()
+        
+        # moore_machine = pickle.load(open(os.path.join(bgru_dir, 'full_min_moore_machine.p)'), 'rb'))
+        moore_machine = pickle.load(open(os.path.join(bgru_dir, 'partial_min_moore_machine.p)'), 'rb'))
         bgru_net.cpu()
         bgru_net.eval()
         perf = moore_machine.evaluate(bgru_net, self.env, total_episodes=3, render=True, inspect=False)
@@ -132,11 +151,10 @@ class ProcessFSM():
     def functional_pruning_fsm(self, bgru_net, bgru_dir, cuda):
         bgru_net_path = os.path.join(bgru_dir, 'model.p')
         bgru_plot_dir = tl.ensure_directory_exits(os.path.join(bgru_dir, 'Plots'))  
-        # TODO: unminimized / minimized 상관 없이 agnostic한 pruning을 짜야 한다
-        # 계획은 minimized 넣는 건데, 만약 그 그림이 understanding 논문과 다르다면
-        # unminimized에 하고 interpretable reduction까지 해봐야하니까
-        min_moore_machine_path = os.path.join(bgru_dir, 'min_moore_machine.p')
-        unmin_moore_machine_path = os.path.join(bgru_dir, 'unmin_moore_machine.p')
+        # TODO: unminimized, partial MMN을 pruning 해야한다.
+        # min_moore_machine_path = os.path.join(bgru_dir, 'full_min_moore_machine.p')
+        # unmin_moore_machine_path = os.path.join(bgru_dir, 'full_unmin_moore_machine.p')
+        unmin_moore_machine_path = os.path.join(bgru_dir, 'partial_unmin_moore_machine.p')
 
         bgru_net.load_state_dict(torch.load(bgru_net_path))
         moore_machine = pickle.load(open(min_moore_machine_path, 'rb'))
